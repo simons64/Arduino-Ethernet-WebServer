@@ -76,9 +76,7 @@ void loop()
         boolean currentLineIsBlank = true;
         while (client.connected()) {
             if (client.available()) {   // client data available to read
-                char c = client.read(); // read 1 byte (character) from client
-                // limit the size of the stored received HTTP request
-                // buffer first part of HTTP request in HTTP_req array (string)
+                char c = client.read();
                 // leave last element in array as 0 to null terminate string (REQ_BUF_SZ - 1)
                 if (req_index < (REQ_BUF_SZ - 1)) {
                     HTTP_req[req_index] = c;          // save HTTP request character
@@ -88,23 +86,22 @@ void loop()
                 // respond to client only after last line received
                 if (c == '\n' && currentLineIsBlank) {
                     // display received HTTP request on serial port
-                    Serial.print("\n  HTTP_req:\n");
+                    Serial.print("\n=====HTTP_req=====\n");
                     Serial.print(HTTP_req);
-                    Serial.print("\n\n");
+                    Serial.print("\n->HTTP Answer:\n");
 
                     
-                    // send a standard http response header
+                    // standard http response header
                     client.println("HTTP/1.1 200 OK");
-                    // remainder of header follows below, depending on if
-                    // web page or XML page is requested
-                    // Ajax request - send XML file
+
+                    // type of HTTP_REQUEST
                     if (StrContains(HTTP_req, "ajax_inputs")) {
-                        // send rest of HTTP header
+                        Serial.println("  ---> ajax_script.js");
                         client.println("Content-Type: text/xml");
                         client.println("Connection: keep-alive");
                         client.println();
                         SetLEDs();
-                        // send XML file containing input states
+                        
                         XML_response(client);
                     }
                     else if (StrContains(HTTP_req, "ajax_script.js")) {
@@ -135,27 +132,27 @@ void loop()
 
                         print_http_answer(index_htm);
                     }
+                    
                     // reset buffer index and all buffer elements to 0
                     req_index = 0;
                     StrClear(HTTP_req, REQ_BUF_SZ);
+                    Serial.println("==================");
                     break;
                 }
                 // every line of text received from the client ends with \r\n
                 if (c == '\n') {
-                    // last character on line of received text
-                    // starting new line with next character read
                     currentLineIsBlank = true;
                 } 
                 else if (c != '\r') {
-                    // a text character was received from client
                     currentLineIsBlank = false;
                 }
             } // end if (client.available())
         } // end while (client.connected())
-        delay(1);      // give the web browser time to receive the data
+        delay(1);      // web browser time to receive data
         client.stop(); // close the connection
     } // end if (client)
 }
+
 
 // checks if received HTTP request is switching on/off LEDs
 // also saves the state of the LEDs
